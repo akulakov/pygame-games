@@ -1,0 +1,7 @@
+*.py[co]
+* copy.*
+.DS_Store
+*~lock.*
+*.swp
+*.swo
+*~
