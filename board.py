@@ -19,6 +19,9 @@ white      = (255,255,255)
 black      = (0,0,0)
 pink       = (255,200,200)
 
+def pploc(loc):
+    return loc.x+1, loc.y+1
+
 
 class BaseTile(object):
     """ Base tile that sets a convenience attribute according to the name of the class, e.g. Blank
@@ -353,6 +356,10 @@ class PygameBoard(Board):
             display.update()
 
     def move(self, loc1, loc2):
+        # print("loc1", pploc(loc1))
+        # print("loc2", pploc(loc2))
+        # print("self[loc1]", self[loc1])
+        # print("self[loc2]", self[loc2])
         self[loc2] = self[loc1]
         self[loc2].highlight = False
         self[loc2].loc = loc2

@@ -11,6 +11,9 @@ from utils import *
 game_size = 5
 tilesize  = 100
 
+def same_side(p1, p2):
+    return p1 and p2 and p1.char==p2.char
+
 class Piece(object):
     def __init__(self, char, board=None, loc=None):
         self.board     = board
@@ -23,8 +26,8 @@ class Piece(object):
     def __repr__(self):
         return self.char
 
-    def __eq__(self, other):
-        return other and self.char == other.char
+    # def __eq__(self, other):
+        # return other and self.char == other.char
 
     def place(self):
         self.board[self.loc] = self
@@ -73,19 +76,19 @@ class Game1(object):
             if not ai_pieces:
                 self.game_won(p1.char)
             if not player_pieces:
-                self.game_won(p2.char)
+                self.game_won(ai.char)
 
     def ai_move(self, player):
         if ai_pieces:
             p    = randchoice(ai_pieces)
             nbrs = board.neighbour_locs(p)
-            pl   = [l for l in nbrs if board[l]==p1]
+            pl   = [loc for loc in nbrs if same_side(board[loc], p1)]
             loc  = first(pl) or randchoice(nbrs)
             p.move(loc)
 
     def make_move(self, player):
         if player == ai:
-            return self.ai_move(player)
+            self.ai_move(player)
         else:
             self.human_move(player)
 
@@ -93,7 +96,7 @@ class Game1(object):
         hl_loc = None
         while True:
             loc = board.get_click_index()
-            if board[loc] == player:
+            if same_side(board[loc], player):
                 board.toggle_highlight(loc)
                 hl_loc = None if hl_loc else loc
 
@@ -108,11 +111,8 @@ if __name__ == "__main__":
     if arg: game_size = int(arg[0])
 
     board         = GameBoard((game_size, game_size), tilesize)
-    pchar, aichar = 'r', 'o'
-    players       = Piece('r'), Piece('o')
-    ai            = Piece('o')
-    p1            = Piece(pchar, board, Loc(0,0))
-    p2            = Piece(aichar, board, Loc(2,2))
-    ai_pieces     = [p2]
-    player_pieces = [p1]
+    p1, ai        = Piece('r'), Piece('o')
+    players       = p1, ai
+    ai_pieces     = [Piece(ai.char, board, board.random_blank()) for _ in range(3)]
+    player_pieces = [Piece(p1.char, board, board.random_blank()) for _ in range(3)]
     Game1().run()
