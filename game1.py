@@ -46,11 +46,7 @@ class Piece(object):
 
 
 class GameBoard(PygameBoard):
-    def random_blank(self):
-        return randchoice( [loc for loc in self.locations() if self[loc] is None] )
-
     def move(self, loc1, loc2):
-
         t1 = self[loc1]
         t2 = self[loc2]
         if t1 == t2: return     # can't capture own piece
@@ -67,7 +63,7 @@ class Game1(object):
     drawmsg = "It's a draw!"
 
     def game_won(self, winner):
-        board.message(self.winmsg % winner if winner else self.drawmsg, (200,200))
+        board.message(self.winmsg % winner if winner else self.drawmsg)
         board.wait_exit()
 
     def run(self):
@@ -81,10 +77,10 @@ class Game1(object):
 
     def ai_move(self, player):
         if ai_pieces:
-            p = randchoice(ai_pieces)
+            p    = randchoice(ai_pieces)
             nbrs = board.neighbour_locs(p)
-            pl = [l for l in nbrs if board[l]==p1]
-            loc = first(pl) or randchoice(nbrs)
+            pl   = [l for l in nbrs if board[l]==p1]
+            loc  = first(pl) or randchoice(nbrs)
             p.move(loc)
 
     def make_move(self, player):

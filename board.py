@@ -311,7 +311,7 @@ class StackableBoard(BaseBoard):
 
 
 class PygameBoard(Board):
-    def __init__(self, size, tilesize=100, message_font=None, glyph_font=None):
+    def __init__(self, size, tilesize=100, message_font=None, glyph_font=None, margin=50):
         Board.__init__(self, size, None)
         from pygame import font, display
         font.init()
@@ -320,16 +320,17 @@ class PygameBoard(Board):
         self.message_font = font.Font(message_font[0], message_font[1])
         self.glyph_font   = font.Font(glyph_font[0], glyph_font[1])
         n                 = tilesize + 1
-        self.scr          = display.set_mode((size[0]*n, size[1]*n))
+        self.margin       = margin
+        self.scr          = display.set_mode((size[0]*n + margin*2, size[1]*n + margin*2))
+        self.scr.fill(white)
         self.tilesize     = tilesize
         self.gui_tiles    = [[self.make_rect(x, y, tilesize, tilesize)
-                              for x in range(0, size[0]*n+n, n)]
-                              for y in range(0, size[1]*n+n, n)]
+                              for x in range(0, size[0]*n, n)]
+                              for y in range(0, size[1]*n, n)]
         display.flip()
 
     def make_rect(self, x, y, width, height):
-        r = self.scr.fill(-1, (x, y, width, height))
-        return r
+        return draw.rect(self.scr, black, (x + self.margin, y + self.margin, width, height), 1)
 
     def test_unicode(self):
         t = u"""
@@ -375,7 +376,8 @@ class PygameBoard(Board):
         ts        = self.tilesize
         r         = self.gui_tiles[y][x]
         self[loc] = ''
-        self.scr.fill(-1, (r.topleft[0], r.topleft[1], ts, ts))
+        draw.rect(self.scr, white, (r.topleft[0], r.topleft[1], ts, ts), 0)
+        draw.rect(self.scr, black, (r.topleft[0], r.topleft[1], ts, ts), 1)
         display.update()
 
     def wait_exit(self):
@@ -394,7 +396,8 @@ class PygameBoard(Board):
                 sys.exit(); pygame.quit()
             if ev.type == MOUSEBUTTONDOWN:
                 n = self.tilesize + 1
-                loc = Loc(int(ev.pos[0] / n), int(ev.pos[1] / n))
+                m = self.margin
+                loc = Loc(int((ev.pos[0]-m) / n), int((ev.pos[1]-m) / n))
                 if loc in self:
                     return loc
 
@@ -407,11 +410,12 @@ class PygameBoard(Board):
 
     def message(self, txt, center=None, color=None, bgcolor=None, border=None, border_size=4, board_center=True):
         """Display message on screen."""
-        color       = color or (0,0,0)
-        bgcolor     = bgcolor or (235,235,235)
-        border      = border or (100,100,100)
-        txt         = self.message_font.render(txt, 1, color, bgcolor)
-        rect        = txt.get_rect()
+        color   = color or (0,0,0)
+        bgcolor = bgcolor or (235,235,235)
+        border  = border or (100,100,100)
+        txt     = self.message_font.render(txt, 1, color, bgcolor)
+        rect    = txt.get_rect()
+
         if board_center and not center:
             i = display.Info()
             center = i.current_w / 2, i.current_h / 2
