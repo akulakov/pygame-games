@@ -8,7 +8,7 @@ from random import choice as randchoice
 import pygame
 from pygame import *
 
-from utils2 import ujoin, range1, enumerate1, first, nl, space
+from utils import ujoin, range1, enumerate1, first, nl, space, iround
 
 red        = (255,0,0)
 green      = (0,255,0)
@@ -16,6 +16,7 @@ blue       = (0,0,255)
 dark_blue  = (0,0,128)
 light_blue = (150,150,250)
 white      = (255,255,255)
+gray       = (170,170,170)
 black      = (0,0,0)
 pink       = (255,200,200)
 
@@ -145,7 +146,8 @@ class BaseBoard(object):
         x, y = self.ploc(tile_loc)
         coords = (-1,0,1)
         locs = set((x+n, y+m) for n in coords for m in coords) - set( [(x,y)] )
-        return [ Loc(*tpl) for tpl in locs if self.valid(Loc(*tpl)) ]
+        locs = [ Loc(*tpl) for tpl in locs if self.valid(Loc(*tpl)) ]
+        return [loc for loc in locs if self[loc] is not None]
 
     def neighbours(self, tile_loc):
         """Return the list of neighbours of `tile`."""
@@ -155,7 +157,8 @@ class BaseBoard(object):
         """Return a generator of neighbour 'cross' (i.e. no diagonal) locations of `tile`."""
         x, y = self.ploc(tile_loc)
         locs = ((x-1, y), (x+1, y), (x, y-1), (x, y+1))
-        return [ Loc(*tpl) for tpl in locs if self.valid(Loc(*tpl)) ]
+        locs = [ Loc(*tpl) for tpl in locs if self.valid(Loc(*tpl)) ]
+        return [loc for loc in locs if self[loc] is not None]
 
     def cross_neighbours(self, tile_loc):
         """Return the generator of 'cross' (i.e. no diagonal) neighbours of `tile`."""
@@ -314,8 +317,8 @@ class StackableBoard(BaseBoard):
 
 
 class PygameBoard(Board):
-    def __init__(self, size, tilesize=100, message_font=None, glyph_font=None, margin=50):
-        Board.__init__(self, size, None)
+    def __init__(self, size, tilesize=100, message_font=None, glyph_font=None, margin=50, circle=False, tile_cls=None):
+        Board.__init__(self, size, tile_cls)
         from pygame import font, display
         font.init()
         message_font      = message_font or (None, 60)
@@ -325,15 +328,27 @@ class PygameBoard(Board):
         n                 = tilesize + 1
         self.margin       = margin
         self.scr          = display.set_mode((size[0]*n + margin*2, size[1]*n + margin*2))
+
         self.scr.fill(white)
-        self.tilesize     = tilesize
-        self.gui_tiles    = [[self.make_rect(x, y, tilesize, tilesize)
+        self.tilesize  = tilesize
+        self.circle    = circle
+        self.tile_locs = [[ (iround(margin+x+tilesize/2) , iround(margin+y+tilesize/2))
+                              for x in range(0, size[0]*n, n)]
+                              for y in range(0, size[1]*n, n)]
+        self.gui_tiles = [[self.mkgui_tile(x, y, tilesize, tilesize)
                               for x in range(0, size[0]*n, n)]
                               for y in range(0, size[1]*n, n)]
         display.flip()
 
-    def make_rect(self, x, y, width, height):
-        return draw.rect(self.scr, black, (x + self.margin, y + self.margin, width, height), 1)
+    def mkgui_tile(self, x, y, width, height):
+        ts = self.tilesize
+        m = self.margin
+        if self.circle:
+            c = draw.circle(self.scr, white, (iround(m+x+ts/2), iround(m+y+ts/2)), iround(ts/2-5), 0)
+            return draw.circle(self.scr, black, (iround(m+x+ts/2), iround(m+y+ts/2)), iround(ts/2-5), 1)
+        else:
+            draw.rect(self.scr, white, (x + m, y + m, width, height), 0)
+            return draw.rect(self.scr, black, (x + m, y + m, width, height), 1)
 
     def test_unicode(self):
         t = u"""
@@ -383,6 +398,7 @@ class PygameBoard(Board):
         ts        = self.tilesize
         r         = self.gui_tiles[y][x]
         self[loc] = ''
+        # self.mkgui_tile(r.topleft[0], r.topleft[1], ts, ts)
         draw.rect(self.scr, white, (r.topleft[0], r.topleft[1], ts, ts), 0)
         draw.rect(self.scr, black, (r.topleft[0], r.topleft[1], ts, ts), 1)
         display.update()
@@ -440,5 +456,5 @@ class PygameBoard(Board):
         return not any(tile is None for tile in self)
 
     def random_blank(self):
-        locs = [loc for loc in self.locations() if self[loc] is None]
+        locs = [loc for loc in self.locations() if self[loc] and self[loc].blank]
         return randchoice(locs) if locs else None
