@@ -165,10 +165,10 @@ class BaseBoard(object):
         """Return the generator of 'cross' (i.e. no diagonal) neighbours of `tile`."""
         return (self[loc] for loc in self.neighbour_cross_locs(tile_loc))
 
-    def make_tile(self, loc):
+    def make_tile(self, loc, **kwargs):
         """Make a tile using `self.def_tile`. If def_tile is simply a string, return it, otherwise instantiate with x, y as arguments."""
         tile = self.def_tile
-        return tile if self._def_tile_str or tile is None else tile(self, loc)
+        return tile if self._def_tile_str or tile is None else tile(self, loc, **kwargs)
 
     def move(self, tile_loc, newloc):
         loc          = self.ploc(tile_loc)
@@ -406,7 +406,7 @@ class PygameBoard(Board):
         x, y      = loc
         ts        = self.tilesize
         r         = self.gui_tiles[y][x]
-        self[loc] = self.make_tile(loc)
+        self[loc] = self.make_tile(loc, none=False)
         # self.mkgui_tile(r.topleft[0], r.topleft[1], ts, ts)
         draw.rect(self.scr, white, (r.topleft[0], r.topleft[1], ts, ts), 0)
         draw.rect(self.scr, gray, (r.topleft[0], r.topleft[1], ts, ts), 1)
