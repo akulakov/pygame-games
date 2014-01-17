@@ -16,7 +16,8 @@ blue       = (0,0,255)
 dark_blue  = (0,0,128)
 light_blue = (150,150,250)
 white      = (255,255,255)
-gray       = (170,170,170)
+gray       = (100,100,100)
+lgray      = (170,170,170)
 black      = (0,0,0)
 pink       = (255,200,200)
 
@@ -167,7 +168,7 @@ class BaseBoard(object):
     def make_tile(self, loc):
         """Make a tile using `self.def_tile`. If def_tile is simply a string, return it, otherwise instantiate with x, y as arguments."""
         tile = self.def_tile
-        return tile if self._def_tile_str or tile is None else tile(loc)
+        return tile if self._def_tile_str or tile is None else tile(self, loc)
 
     def move(self, tile_loc, newloc):
         loc          = self.ploc(tile_loc)
@@ -232,6 +233,8 @@ class Board(BaseBoard):
         self.board    = [ [None for x in xrng] for y in yrng ]
 
     def __getitem__(self, loc):
+        if isinstance(loc, tuple):
+            loc = Loc(loc[0], loc[1])
         self.init_board()
         return self.board[loc.y][loc.x]
 
@@ -341,14 +344,15 @@ class PygameBoard(Board):
         display.flip()
 
     def mkgui_tile(self, x, y, width, height):
+        """Create a new gui tile or clear tile display."""
         ts = self.tilesize
         m = self.margin
         if self.circle:
             c = draw.circle(self.scr, white, (iround(m+x+ts/2), iround(m+y+ts/2)), iround(ts/2-5), 0)
-            return draw.circle(self.scr, black, (iround(m+x+ts/2), iround(m+y+ts/2)), iround(ts/2-5), 1)
+            return draw.circle(self.scr, gray, (iround(m+x+ts/2), iround(m+y+ts/2)), iround(ts/2-5), 1)
         else:
             draw.rect(self.scr, white, (x + m, y + m, width, height), 0)
-            return draw.rect(self.scr, black, (x + m, y + m, width, height), 1)
+            return draw.rect(self.scr, gray, (x + m, y + m, width, height), 1)
 
     def test_unicode(self):
         t = u"""
@@ -361,8 +365,10 @@ class PygameBoard(Board):
         return loc.y < len(self.gui_tiles) and loc.x < len(self.gui_tiles[0])
 
     def __setitem__(self, loc, piece):
+        if isinstance(loc, tuple):
+            loc = Loc(loc[0], loc[1])
         super(PygameBoard, self).__setitem__(loc, piece)
-        if piece:
+        if piece and not piece.tile:
             rect = self.gui_tiles[loc.y][loc.x]
             if isinstance(piece, (str, unicode)):
                 self.draw_glyph(piece, rect.center)
@@ -385,11 +391,14 @@ class PygameBoard(Board):
 
     def toggle_highlight(self, loc):
         if self[loc]:
-            r     = self.gui_tiles[loc.y][loc.x]
-            ts    = self.tilesize
-            color = white if self[loc].highlight else light_blue
-            x, y = r.topleft
-            draw.rect(self.scr, color, (x+1, y+1, ts-2, ts-2), 3)
+            r         = self.gui_tiles[loc.y][loc.x]
+            ts        = self.tilesize
+            color     = white if self[loc].highlight else light_blue
+            x, y      = r.topleft
+            thickness = 3
+            th2       = thickness*2
+
+            draw.rect(self.scr, color, (x+thickness, y+thickness, ts-th2, ts-th2), thickness)
             self[loc].highlight = not self[loc].highlight
             display.update()
 
@@ -397,10 +406,17 @@ class PygameBoard(Board):
         x, y      = loc
         ts        = self.tilesize
         r         = self.gui_tiles[y][x]
-        self[loc] = ''
+        self[loc] = self.make_tile(loc)
         # self.mkgui_tile(r.topleft[0], r.topleft[1], ts, ts)
         draw.rect(self.scr, white, (r.topleft[0], r.topleft[1], ts, ts), 0)
-        draw.rect(self.scr, black, (r.topleft[0], r.topleft[1], ts, ts), 1)
+        draw.rect(self.scr, gray, (r.topleft[0], r.topleft[1], ts, ts), 1)
+        display.update()
+
+    def make_blank(self, loc):
+        x, y = loc
+        ts   = self.tilesize
+        r    = self.gui_tiles[y][x]
+        draw.rect(self.scr, white, (r.topleft[0], r.topleft[1], ts, ts), 0)
         display.update()
 
     def wait_exit(self):

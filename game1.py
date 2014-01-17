@@ -26,6 +26,7 @@ class BaseTile(object):
     blank     = True
     highlight = False
     char      = None
+    tile      = True
 
     def __init__(self, board=None, loc=None, none=True):
         self.board = board
@@ -34,16 +35,24 @@ class BaseTile(object):
         if self.board and self.loc:
             self.place()
 
+    def set_none(self):
+        self.none = True
+        self.blank = False
+        if self.board:
+            self.board.make_blank(self.loc)
+
     def place(self):
         self.board[self.loc] = self
 
 
 class BasePiece(BaseTile):
     blank = False
+    tile  = False
 
     def __init__(self, char, board=None, loc=None):
         self.char = char
         super(BasePiece, self).__init__(board, loc)
+        self.none = False
 
     def __repr__(self):
         return self.char
@@ -58,13 +67,13 @@ class BasePiece(BaseTile):
 
 class Piece(BasePiece):
     def draw_r(self, rect):
-        draw.rect(self.board.scr, black, rect.inflate(-40,-40), 4)
+        draw.rect(self.board.scr, (50,50,50), rect.inflate(-40,-40), 4)
 
     def draw_o(self, rect):
         ts = self.board.tilesize
         # draw.circle(self.board.scr, (170,170,170), rect.center, ts/2-18, 0)
         # draw.circle(self.board.scr, (100,100,100), rect.center, ts/2-19, 0)
-        draw.circle(self.board.scr, black, rect.center, ts/2-20, 0)
+        draw.circle(self.board.scr, (70,70,70), rect.center, ts/2-20, 0)
         draw.circle(self.board.scr, white, rect.center, ts/2-25, 0)
 
 
@@ -122,25 +131,32 @@ class Game1(object):
         while True:
             loc = board.get_click_index()
             if same_side(board[loc], player):
-                board.toggle_highlight(loc)
-                hl_loc = None if hl_loc else loc
+                if hl_loc:
+                    board.toggle_highlight(hl_loc)
+                if hl_loc != loc:
+                    board.toggle_highlight(loc)
+                hl_loc = loc
 
             elif hl_loc and board.dist(loc, hl_loc) < 2:
-                board.move(hl_loc, loc)
-                board.toggle_highlight(hl_loc)
-                break
+                if not board[loc].none:
+                    board.move(hl_loc, loc)
+                    board.toggle_highlight(hl_loc)
+                    break
 
 
 if __name__ == "__main__":
     arg = sys.argv[1:]
     if arg: game_size = int(arg[0])
 
-    board         = GameBoard((game_size, game_size), tilesize, circle=0, tile_cls=BaseTile)
+    board = GameBoard((game_size, game_size), tilesize, circle=0, tile_cls=BaseTile)
     for tile in board:
         tile.none = False  # make all tiles active
+
+    imax = game_size - 1
+    for loc in [(0,0), (0,imax), (imax,0), (imax,imax)]:
+        board[loc].set_none()
     p1, ai        = Piece('r'), Piece('o')
     players       = p1, ai
-    print("board.random_blank()", board.random_blank())
     ai_pieces     = [Piece(ai.char, board, board.random_blank()) for _ in range(3)]
     player_pieces = [Piece(p1.char, board, board.random_blank()) for _ in range(3)]
     Game1().run()
