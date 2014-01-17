@@ -16,7 +16,7 @@ fix 'capture piece'
 """
 
 game_size = 5
-tilesize  = 100
+tilesize  = 75
 
 def same_side(p1, p2):
     return p1 and p2 and p1.char==p2.char
@@ -128,19 +128,27 @@ class Game1(object):
 
     def human_move(self, player):
         hl_loc = None
+        """
+        no hl:
+            set hloc to loc
+        hl and hloc==loc:
+            set hloc to None
+        hl and hloc != loc:
+            toggle hl of hloc; set hloc = loc
+        """
         while True:
             loc = board.get_click_index()
             if same_side(board[loc], player):
-                if hl_loc:
+
+                board.toggle_highlight(loc)
+                if hl_loc and hl_loc != loc:
                     board.toggle_highlight(hl_loc)
-                if hl_loc != loc:
-                    board.toggle_highlight(loc)
-                hl_loc = loc
+                hl_loc = None if hl_loc==loc else loc
 
             elif hl_loc and board.dist(loc, hl_loc) < 2:
                 if not board[loc].none:
-                    board.move(hl_loc, loc)
                     board.toggle_highlight(hl_loc)
+                    board.move(hl_loc, loc)
                     break
 
 
