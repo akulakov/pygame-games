@@ -65,7 +65,8 @@ class BasePiece(BaseTile):
 
 class Piece(BasePiece):
     def draw_r(self, loc):
-        r = Rect(0,0, tilesize-40, tilesize-40, center=loc)
+        r = Rect(0, 0, tilesize-40, tilesize-40)
+        r.center = loc
         # draw.rect(self.board.scr, (50,50,50), rect.inflate(-40,-40), 4)
         draw.rect(self.board.scr, (50,50,50), r, 4)
 
@@ -159,7 +160,7 @@ if __name__ == "__main__":
     arg = sys.argv[1:]
     if arg: game_size = int(arg[0])
 
-    board = GameBoard((game_size, game_size), tilesize, circle=0, tile_cls=BaseTile)
+    board = GameBoard((game_size, game_size), tilesize, circle=1, tile_cls=BaseTile)
     for tile in board:
         tile.none = False  # make all tiles active
 

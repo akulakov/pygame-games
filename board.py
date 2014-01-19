@@ -4,6 +4,7 @@ import sys
 import math
 from time import sleep
 from random import choice as randchoice
+from pprint import pprint
 
 import pygame
 from pygame import *
@@ -338,8 +339,7 @@ class PygameBoard(Board):
         self.tile_locs = [[ (iround(margin+x+tilesize/2) , iround(margin+y+tilesize/2))
                               for x in range(0, size[0]*n, n)]
                               for y in range(0, size[1]*n, n)]
-        from pprint import pprint
-        pprint(self.tile_locs)
+        # pprint(self.tile_locs)
         for loc in [l for locs in self.tile_locs for l in locs]:
             self.mkgui_tile(loc)
         # self.gui_tiles = [[self.mkgui_tile(x, y, tilesize, tilesize)
@@ -359,16 +359,19 @@ class PygameBoard(Board):
             draw.rect(self.scr, white, (x + m, y + m, width, height), 0)
             return draw.rect(self.scr, gray, (x + m, y + m, width, height), 1)
 
-    def mkgui_tile(self, center):
+    def mkgui_tile(self, loc, clear=False):
         """Create a new gui tile or clear tile display."""
         ts = self.tilesize
         if self.circle:
-            draw.circle(self.scr, white, (center[0], center[1]), iround(ts/2-5), 0)
-            draw.circle(self.scr, gray, (center[0], center[1]), iround(ts/2-5), 1)
+            draw.circle(self.scr, white, (loc[0], loc[1]), iround(ts/2-4), 0)
+            if not clear:
+                draw.circle(self.scr, gray, (loc[0], loc[1]), iround(ts/2-5), 1)
         else:
-            r = Rect(0,0, ts, ts, center=center)
+            r = Rect(0, 0, ts, ts)
+            r.center = loc
             draw.rect(self.scr, white, r, 0)
-            draw.rect(self.scr, gray, r, 1)
+            if not clear:
+                draw.rect(self.scr, gray, r, 1)
 
     def test_unicode(self):
         t = u"""
@@ -378,7 +381,7 @@ class PygameBoard(Board):
         self.message(t[2], (300,200))
 
     def __contains__(self, loc):
-        return loc.y < len(self.gui_tiles) and loc.x < len(self.gui_tiles[0])
+        return loc.y < len(self.tile_locs) and loc.x < len(self.tile_locs[0])
 
     def __setitem__(self, loc, piece):
         if isinstance(loc, tuple):
@@ -394,10 +397,6 @@ class PygameBoard(Board):
             display.update()
 
     def move(self, loc1, loc2):
-        # print("loc1", pploc(loc1))
-        # print("loc2", pploc(loc2))
-        # print("self[loc1]", self[loc1])
-        # print("self[loc2]", self[loc2])
         self[loc2] = self[loc1]
         self[loc2].highlight = False
         self[loc2].loc = loc2
@@ -408,25 +407,30 @@ class PygameBoard(Board):
 
     def toggle_highlight(self, loc):
         if self[loc]:
-            r         = self.gui_tiles[loc.y][loc.x]
+            tloc      = self.tile_locs[loc.y][loc.x]
             ts        = self.tilesize
             color     = white if self[loc].highlight else light_blue
-            x, y      = r.topleft
+            # x, y      = r.topleft
             thickness = 3
             th2       = thickness*2
 
-            draw.rect(self.scr, color, (x+thickness, y+thickness, ts-th2, ts-th2), thickness)
+            r         = Rect(0, 0, ts-th2, ts-th2)
+            r.center  = tloc
+            draw.rect(self.scr, color, r, thickness)
             self[loc].highlight = not self[loc].highlight
             display.update()
 
     def clear(self, loc):
         x, y      = loc
         ts        = self.tilesize
-        r         = self.gui_tiles[y][x]
+        # r         = self.gui_tiles[y][x]
         self[loc] = self.make_tile(loc, none=False)
-        # self.mkgui_tile(r.topleft[0], r.topleft[1], ts, ts)
-        draw.rect(self.scr, white, (r.topleft[0], r.topleft[1], ts, ts), 0)
-        draw.rect(self.scr, gray, (r.topleft[0], r.topleft[1], ts, ts), 1)
+        tloc      = self.tile_locs[y][x]
+        self.mkgui_tile(tloc)
+        # r         = Rect(0, 0, ts, ts)
+        # r.center  = tloc
+        # draw.rect(self.scr, white, r, 0)
+        # draw.rect(self.scr, gray, r, 1)
         display.update()
 
     def make_blank(self, loc):
@@ -434,7 +438,7 @@ class PygameBoard(Board):
         ts   = self.tilesize
         # r    = self.gui_tiles[y][x]
         loc    = self.tile_locs[y][x]
-        self.mkgui_tile(loc)
+        self.mkgui_tile(loc, clear=True)
         # draw.rect(self.scr, white, (r.topleft[0], r.topleft[1], ts, ts), 0)
         display.update()
 
