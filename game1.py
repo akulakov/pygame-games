@@ -10,9 +10,7 @@ from utils import *
 
 """
 which version to use?
-ai move to blank tile only
-ai go to next piece if nowhere to move for current
-fix 'capture piece'
+hl/move should be in Board
 """
 
 game_size = 5
@@ -66,15 +64,17 @@ class BasePiece(BaseTile):
 
 
 class Piece(BasePiece):
-    def draw_r(self, rect):
-        draw.rect(self.board.scr, (50,50,50), rect.inflate(-40,-40), 4)
+    def draw_r(self, loc):
+        r = Rect(0,0, tilesize-40, tilesize-40, center=loc)
+        # draw.rect(self.board.scr, (50,50,50), rect.inflate(-40,-40), 4)
+        draw.rect(self.board.scr, (50,50,50), r, 4)
 
-    def draw_o(self, rect):
+    def draw_o(self, loc):
         ts = self.board.tilesize
         # draw.circle(self.board.scr, (170,170,170), rect.center, ts/2-18, 0)
         # draw.circle(self.board.scr, (100,100,100), rect.center, ts/2-19, 0)
-        draw.circle(self.board.scr, (70,70,70), rect.center, ts/2-20, 0)
-        draw.circle(self.board.scr, white, rect.center, ts/2-25, 0)
+        draw.circle(self.board.scr, (70,70,70), loc, ts/2-20, 0)
+        draw.circle(self.board.scr, white, loc, ts/2-25, 0)
 
 
 class GameBoard(PygameBoard):
@@ -107,46 +107,49 @@ class Game1(object):
             if not player_pieces:
                 self.game_won(ai.char)
 
-    def ai_move(self, player):
-        shuffle(ai_pieces)
-        for p in ai_pieces:
-            nbrs   = board.neighbour_locs(p)
-            pl     = [loc for loc in nbrs if same_side(board[loc], p1)]
-            blanks = [loc for loc in nbrs if board[loc] and board[loc].blank]
-            print("blanks", blanks)
-            loc    = first(pl) or randchoice(blanks) if blanks else None
-            print("loc", loc)
-            if loc:
-                p.move(loc)
-                break
-
     def make_move(self, player):
         if player == ai:
             self.ai_move(player)
         else:
             self.human_move(player)
 
+    def ai_move(self, player):
+        """Capture player piece if possible, otherwise move to a blank if possible, or try another piece."""
+        shuffle(ai_pieces)
+        for p in ai_pieces:
+            nbrs   = board.neighbour_locs(p)
+            pl     = [loc for loc in nbrs if same_side(board[loc], p1)]
+            blanks = [loc for loc in nbrs if board[loc] and board[loc].blank]
+            loc    = first(pl) or randchoice(blanks) if blanks else None
+            if loc:
+                p.move(loc)
+                break
+
     def human_move(self, player):
+        """ Select a piece and then move a highlighted piece.
+
+            select logic:
+             - only player's piece can be selected
+             - click on a piece to select, click again to deselect
+             - move if a piece is selected AND clicked on a valid location
+             - if a piece is already selected and clicked on a new player's piece, the old one is
+               deselected
+        """
         hl_loc = None
-        """
-        no hl:
-            set hloc to loc
-        hl and hloc==loc:
-            set hloc to None
-        hl and hloc != loc:
-            toggle hl of hloc; set hloc = loc
-        """
         while True:
             loc = board.get_click_index()
             if same_side(board[loc], player):
-
                 board.toggle_highlight(loc)
+
                 if hl_loc and hl_loc != loc:
                     board.toggle_highlight(hl_loc)
-                hl_loc = None if hl_loc==loc else loc
+
+                if hl_loc==loc : hl_loc = None
+                else           : hl_loc = loc
 
             elif hl_loc and board.dist(loc, hl_loc) < 2:
                 if not board[loc].none:
+                    # capture piece or move to a blank tile
                     board.toggle_highlight(hl_loc)
                     board.move(hl_loc, loc)
                     break

@@ -338,12 +338,17 @@ class PygameBoard(Board):
         self.tile_locs = [[ (iround(margin+x+tilesize/2) , iround(margin+y+tilesize/2))
                               for x in range(0, size[0]*n, n)]
                               for y in range(0, size[1]*n, n)]
-        self.gui_tiles = [[self.mkgui_tile(x, y, tilesize, tilesize)
-                              for x in range(0, size[0]*n, n)]
-                              for y in range(0, size[1]*n, n)]
+        from pprint import pprint
+        pprint(self.tile_locs)
+        for loc in [l for locs in self.tile_locs for l in locs]:
+            self.mkgui_tile(loc)
+        # self.gui_tiles = [[self.mkgui_tile(x, y, tilesize, tilesize)
+                              # for x in range(0, size[0]*n, n)]
+                              # for y in range(0, size[1]*n, n)]
+        # self.gui_tiles = [[self.mkgui_tile(center)]]
         display.flip()
 
-    def mkgui_tile(self, x, y, width, height):
+    def Xmkgui_tile(self, x, y, width, height):
         """Create a new gui tile or clear tile display."""
         ts = self.tilesize
         m = self.margin
@@ -353,6 +358,17 @@ class PygameBoard(Board):
         else:
             draw.rect(self.scr, white, (x + m, y + m, width, height), 0)
             return draw.rect(self.scr, gray, (x + m, y + m, width, height), 1)
+
+    def mkgui_tile(self, center):
+        """Create a new gui tile or clear tile display."""
+        ts = self.tilesize
+        if self.circle:
+            draw.circle(self.scr, white, (center[0], center[1]), iround(ts/2-5), 0)
+            draw.circle(self.scr, gray, (center[0], center[1]), iround(ts/2-5), 1)
+        else:
+            r = Rect(0,0, ts, ts, center=center)
+            draw.rect(self.scr, white, r, 0)
+            draw.rect(self.scr, gray, r, 1)
 
     def test_unicode(self):
         t = u"""
@@ -369,11 +385,12 @@ class PygameBoard(Board):
             loc = Loc(loc[0], loc[1])
         super(PygameBoard, self).__setitem__(loc, piece)
         if piece and not piece.tile:
-            rect = self.gui_tiles[loc.y][loc.x]
+            # rect = self.gui_tiles[loc.y][loc.x]
+            loc = self.tile_locs[loc.y][loc.x]
             if isinstance(piece, (str, unicode)):
-                self.draw_glyph(piece, rect.center)
+                self.draw_glyph(piece, loc)
             else:
-                piece.draw(rect)
+                piece.draw(loc)
             display.update()
 
     def move(self, loc1, loc2):
@@ -415,8 +432,10 @@ class PygameBoard(Board):
     def make_blank(self, loc):
         x, y = loc
         ts   = self.tilesize
-        r    = self.gui_tiles[y][x]
-        draw.rect(self.scr, white, (r.topleft[0], r.topleft[1], ts, ts), 0)
+        # r    = self.gui_tiles[y][x]
+        loc    = self.tile_locs[y][x]
+        self.mkgui_tile(loc)
+        # draw.rect(self.scr, white, (r.topleft[0], r.topleft[1], ts, ts), 0)
         display.update()
 
     def wait_exit(self):
