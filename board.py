@@ -8,6 +8,7 @@ from pprint import pprint
 
 import pygame
 from pygame import *
+from pygame import font, display, gfxdraw
 
 from utils import ujoin, range1, enumerate1, first, nl, space, iround
 
@@ -323,7 +324,7 @@ class StackableBoard(BaseBoard):
 class PygameBoard(Board):
     def __init__(self, size, tilesize=100, message_font=None, glyph_font=None, margin=50, circle=False, tile_cls=None):
         Board.__init__(self, size, tile_cls)
-        from pygame import font, display
+
         font.init()
         message_font      = message_font or (None, 60)
         glyph_font        = glyph_font or (None, 70)
@@ -332,8 +333,15 @@ class PygameBoard(Board):
         n                 = tilesize + 1
         self.margin       = margin
         self.scr          = display.set_mode((size[0]*n + margin*2, size[1]*n + margin*2))
-
         self.scr.fill(white)
+
+        # self.sfc = Surface(self.scr.get_size(), SRCALPHA, 32)
+        self.sfc = Surface(self.scr.get_size())
+        self.sfc = self.sfc.convert()
+        self.sfc.fill(white)
+        # gfxdraw.aacircle(self.sfc, 300, 300, 100, gray)
+
+        self.scr.blit(self.sfc, (0,0))
         self.tilesize  = tilesize
         self.circle    = circle
         self.tile_locs = [[ (iround(margin+x+tilesize/2) , iround(margin+y+tilesize/2))
@@ -342,30 +350,26 @@ class PygameBoard(Board):
         # pprint(self.tile_locs)
         for loc in [l for locs in self.tile_locs for l in locs]:
             self.mkgui_tile(loc)
+        self.scr.blit(self.sfc, (0,0))
         # self.gui_tiles = [[self.mkgui_tile(x, y, tilesize, tilesize)
                               # for x in range(0, size[0]*n, n)]
                               # for y in range(0, size[1]*n, n)]
         # self.gui_tiles = [[self.mkgui_tile(center)]]
         display.flip()
 
-    def Xmkgui_tile(self, x, y, width, height):
-        """Create a new gui tile or clear tile display."""
-        ts = self.tilesize
-        m = self.margin
-        if self.circle:
-            c = draw.circle(self.scr, white, (iround(m+x+ts/2), iround(m+y+ts/2)), iround(ts/2-5), 0)
-            return draw.circle(self.scr, gray, (iround(m+x+ts/2), iround(m+y+ts/2)), iround(ts/2-5), 1)
-        else:
-            draw.rect(self.scr, white, (x + m, y + m, width, height), 0)
-            return draw.rect(self.scr, gray, (x + m, y + m, width, height), 1)
-
     def mkgui_tile(self, loc, clear=False):
         """Create a new gui tile or clear tile display."""
         ts = self.tilesize
         if self.circle:
-            draw.circle(self.scr, white, (loc[0], loc[1]), iround(ts/2-4), 0)
+            # gfxdraw.aacircle(self.sfc, loc[0], loc[1], iround(ts/2-4), white)
+            gfxdraw.aacircle(self.sfc, loc[0], loc[1], iround(ts/2-4), white)
             if not clear:
-                draw.circle(self.scr, gray, (loc[0], loc[1]), iround(ts/2-5), 1)
+                gfxdraw.aacircle(self.sfc, loc[0], loc[1], iround(ts/2-4), gray)
+            # gfxdraw.filled_circle(self.sfc, loc[0], loc[1], iround(ts/2-4), gray)
+
+            # draw.circle(self.scr, white, (loc[0], loc[1]), iround(ts/2-4), 0)
+            # if not clear:
+                # draw.circle(self.scr, gray, (loc[0], loc[1]), iround(ts/2-5), 1)
         else:
             r = Rect(0, 0, ts, ts)
             r.center = loc
