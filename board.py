@@ -339,7 +339,6 @@ class PygameBoard(Board):
         self.sfc = Surface(self.scr.get_size())
         self.sfc = self.sfc.convert()
         self.sfc.fill(white)
-        # gfxdraw.aacircle(self.sfc, 300, 300, 100, gray)
 
         self.scr.blit(self.sfc, (0,0))
         self.tilesize  = tilesize
@@ -358,11 +357,14 @@ class PygameBoard(Board):
         display.flip()
 
     def mkgui_tile(self, loc, clear=False):
-        """Create a new gui tile or clear tile display."""
+        """ Redraw the gui tile or just clear the tile.
+
+            clear: use to clear 'unmovable' tiles
+        """
         ts = self.tilesize
         if self.circle:
             # gfxdraw.aacircle(self.sfc, loc[0], loc[1], iround(ts/2-4), white)
-            gfxdraw.aacircle(self.sfc, loc[0], loc[1], iround(ts/2-4), white)
+            gfxdraw.filled_circle(self.sfc, loc[0], loc[1], iround(ts/2), white)
             if not clear:
                 gfxdraw.aacircle(self.sfc, loc[0], loc[1], iround(ts/2-4), gray)
             # gfxdraw.filled_circle(self.sfc, loc[0], loc[1], iround(ts/2-4), gray)
@@ -373,9 +375,12 @@ class PygameBoard(Board):
         else:
             r = Rect(0, 0, ts, ts)
             r.center = loc
-            draw.rect(self.scr, white, r, 0)
+            # draw.rect(self.scr, white, r, 0)
+            gfxdraw.rectangle(self.sfc, r, white)
             if not clear:
-                draw.rect(self.scr, gray, r, 1)
+                gfxdraw.rectangle(self.sfc, r, gray)
+                # draw.rect(self.scr, gray, r, 1)
+        self.scr.blit(self.sfc, (0,0))
 
     def test_unicode(self):
         t = u"""
@@ -430,7 +435,7 @@ class PygameBoard(Board):
         # r         = self.gui_tiles[y][x]
         self[loc] = self.make_tile(loc, none=False)
         tloc      = self.tile_locs[y][x]
-        self.mkgui_tile(tloc)
+        self.mkgui_tile(tloc, False)
         # r         = Rect(0, 0, ts, ts)
         # r.center  = tloc
         # draw.rect(self.scr, white, r, 0)

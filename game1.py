@@ -4,6 +4,7 @@ import sys
 from random import choice as randchoice
 from itertools import cycle
 from pygame import *
+from pygame import gfxdraw
 
 from board import PygameBoard, Loc, black, white, gray
 from utils import *
@@ -68,14 +69,15 @@ class Piece(BasePiece):
         r = Rect(0, 0, tilesize-40, tilesize-40)
         r.center = loc
         # draw.rect(self.board.scr, (50,50,50), rect.inflate(-40,-40), 4)
-        draw.rect(self.board.scr, (50,50,50), r, 4)
+        # for n in range(1):
+        draw.rect(self.board.scr, (50,50,50), r, 1)
+        draw.rect(self.board.scr, gray, r.inflate(-4,-4), 0)
 
     def draw_o(self, loc):
-        ts = self.board.tilesize
-        # draw.circle(self.board.scr, (170,170,170), rect.center, ts/2-18, 0)
-        # draw.circle(self.board.scr, (100,100,100), rect.center, ts/2-19, 0)
-        draw.circle(self.board.scr, (70,70,70), loc, ts/2-20, 0)
-        draw.circle(self.board.scr, white, loc, ts/2-25, 0)
+        B = self.board
+        gfxdraw.filled_circle(B.sfc, loc[0], loc[1], B.tilesize/2-22, (120,120,120))
+        gfxdraw.aacircle(B.sfc, loc[0], loc[1], B.tilesize/2-20, black)
+        B.scr.blit(B.sfc, (0,0))
 
 
 class GameBoard(PygameBoard):
@@ -160,7 +162,7 @@ if __name__ == "__main__":
     arg = sys.argv[1:]
     if arg: game_size = int(arg[0])
 
-    board = GameBoard((game_size, game_size), tilesize, circle=1, tile_cls=BaseTile)
+    board = GameBoard((game_size, game_size), tilesize, circle=0, tile_cls=BaseTile)
     for tile in board:
         tile.none = False  # make all tiles active
 
