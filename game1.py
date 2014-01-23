@@ -66,12 +66,12 @@ class BasePiece(BaseTile):
 
 class Piece(BasePiece):
     def draw_r(self, loc):
+        B = self.board
         r = Rect(0, 0, tilesize-40, tilesize-40)
         r.center = loc
-        # draw.rect(self.board.scr, (50,50,50), rect.inflate(-40,-40), 4)
-        # for n in range(1):
-        draw.rect(self.board.scr, (50,50,50), r, 1)
-        draw.rect(self.board.scr, gray, r.inflate(-4,-4), 0)
+        draw.rect(B.sfc, (50,50,50), r, 1)
+        draw.rect(B.sfc, gray, r.inflate(-4,-4), 0)
+        B.scr.blit(B.sfc, (0,0))
 
     def draw_o(self, loc):
         B = self.board

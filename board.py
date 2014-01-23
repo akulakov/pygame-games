@@ -363,23 +363,15 @@ class PygameBoard(Board):
         """
         ts = self.tilesize
         if self.circle:
-            # gfxdraw.aacircle(self.sfc, loc[0], loc[1], iround(ts/2-4), white)
             gfxdraw.filled_circle(self.sfc, loc[0], loc[1], iround(ts/2), white)
             if not clear:
                 gfxdraw.aacircle(self.sfc, loc[0], loc[1], iround(ts/2-4), gray)
-            # gfxdraw.filled_circle(self.sfc, loc[0], loc[1], iround(ts/2-4), gray)
-
-            # draw.circle(self.scr, white, (loc[0], loc[1]), iround(ts/2-4), 0)
-            # if not clear:
-                # draw.circle(self.scr, gray, (loc[0], loc[1]), iround(ts/2-5), 1)
         else:
             r = Rect(0, 0, ts, ts)
             r.center = loc
-            # draw.rect(self.scr, white, r, 0)
-            gfxdraw.rectangle(self.sfc, r, white)
+            draw.rect(self.sfc, white, r, 0)
             if not clear:
                 gfxdraw.rectangle(self.sfc, r, gray)
-                # draw.rect(self.scr, gray, r, 1)
         self.scr.blit(self.sfc, (0,0))
 
     def test_unicode(self):
