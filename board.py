@@ -334,8 +334,6 @@ class PygameBoard(Board):
         self.margin       = margin
         self.scr          = display.set_mode((size[0]*n + margin*2, size[1]*n + margin*2))
         self.scr.fill(white)
-
-        # self.sfc = Surface(self.scr.get_size(), SRCALPHA, 32)
         self.sfc = Surface(self.scr.get_size())
         self.sfc = self.sfc.convert()
         self.sfc.fill(white)
@@ -346,14 +344,9 @@ class PygameBoard(Board):
         self.tile_locs = [[ (iround(margin+x+tilesize/2) , iround(margin+y+tilesize/2))
                               for x in range(0, size[0]*n, n)]
                               for y in range(0, size[1]*n, n)]
-        # pprint(self.tile_locs)
         for loc in [l for locs in self.tile_locs for l in locs]:
             self.mkgui_tile(loc)
         self.scr.blit(self.sfc, (0,0))
-        # self.gui_tiles = [[self.mkgui_tile(x, y, tilesize, tilesize)
-                              # for x in range(0, size[0]*n, n)]
-                              # for y in range(0, size[1]*n, n)]
-        # self.gui_tiles = [[self.mkgui_tile(center)]]
         display.flip()
 
     def mkgui_tile(self, loc, clear=False):
@@ -384,11 +377,11 @@ class PygameBoard(Board):
     def __contains__(self, loc):
         return loc.y < len(self.tile_locs) and loc.x < len(self.tile_locs[0])
 
-    def __setitem__(self, loc, piece):
+    def __setitem__(self, loc, tile):
         if isinstance(loc, tuple):
             loc = Loc(loc[0], loc[1])
         super(PygameBoard, self).__setitem__(loc, piece)
-        if piece and not piece.tile:
+        if 0:
             # rect = self.gui_tiles[loc.y][loc.x]
             loc = self.tile_locs[loc.y][loc.x]
             if isinstance(piece, (str, unicode)):
@@ -398,10 +391,13 @@ class PygameBoard(Board):
             display.update()
 
     def move(self, loc1, loc2):
-        self[loc2] = self[loc1]
+        piece = self[loc1].piece
+        self[loc1].piece = None
+        self[loc2].piece = piece
         self[loc2].highlight = False
-        self[loc2].loc = loc2
+        piece.loc = loc2
         self.clear(loc1)
+        piece.draw()
 
     def is_highlighted(self, loc):
         return self[loc].highlight
@@ -422,11 +418,11 @@ class PygameBoard(Board):
             display.update()
 
     def clear(self, loc):
-        x, y      = loc
-        ts        = self.tilesize
+        # ts        = self.tilesize
         # r         = self.gui_tiles[y][x]
-        self[loc] = self.make_tile(loc, none=False)
-        tloc      = self.tile_locs[y][x]
+        # self[loc] = self.make_tile(loc)
+        x, y = loc
+        tloc = self.tile_locs[y][x]
         self.mkgui_tile(tloc, False)
         # r         = Rect(0, 0, ts, ts)
         # r.center  = tloc
@@ -435,10 +431,10 @@ class PygameBoard(Board):
         display.update()
 
     def make_blank(self, loc):
-        x, y = loc
-        ts   = self.tilesize
+        # ts   = self.tilesize
         # r    = self.gui_tiles[y][x]
-        loc    = self.tile_locs[y][x]
+        x, y = loc
+        loc  = self.tile_locs[y][x]
         self.mkgui_tile(loc, clear=True)
         # draw.rect(self.scr, white, (r.topleft[0], r.topleft[1], ts, ts), 0)
         display.update()
@@ -496,5 +492,5 @@ class PygameBoard(Board):
         return not any(tile is None for tile in self)
 
     def random_blank(self):
-        locs = [loc for loc in self.locations() if self[loc] and self[loc].blank]
+        locs = [loc for loc in self.locations() if self[loc] and not self[loc].piece and not self[loc].none]
         return randchoice(locs) if locs else None
