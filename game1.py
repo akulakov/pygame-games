@@ -6,20 +6,28 @@ from itertools import cycle
 from pygame import *
 from pygame import gfxdraw
 
-from board import PygameBoard, Loc, black, white, gray
+from board import PygameBoard, Loc, black, white, gray, center_square
 from utils import *
 
 """
 which version to use?
-hl/move should be in Board ?
+hl/move should be in Board
+when capturing, piece moves a 2nd time
 """
 
-game_size = 5
-tilesize  = 75
+game_size = 12
+tilesize  = 45
 
 def same_side(p1, p2):
-    return p1 and p2 and p1.char==p2.char
+    return p1 and p2 and getattr(p1, "player", p1) == getattr(p2, "player", p2)
 
+class Player(object):
+    def __init__(self, id, pieces=None):
+        self.id = id
+        self.pieces = pieces or []
+
+    def __repr__(self):
+        return self.id
 
 class BaseTile(object):
     highlight = False
@@ -29,8 +37,6 @@ class BaseTile(object):
         self.board = board
         self.loc   = loc
         self.none  = none   # unmovable-to tile, should not be drawn
-        # if self.board and self.loc:
-            # self.place()
 
     def set_none(self):
         self.none = True
@@ -43,21 +49,21 @@ class BaseTile(object):
 
 
 class BasePiece(object):
-    def __init__(self, char, board=None, loc=None):
-        self.char = char
-        self.board = board
-        self.loc   = loc
-        # super(BasePiece, self).__init__(board, loc)
-        self.none = False
+    def __init__(self, player, id, board=None, loc=None):
+        self.player = player
+        self.id     = id
+        self.board  = board
+        self.loc    = loc
         if self.board and self.loc:
             self.place()
+        player.pieces.append(self)
 
     def __repr__(self):
-        return self.char
+        return self.player
 
     def draw(self):
         """Draw piece."""
-        getattr(self, "draw_"+self.char)(self.loc)
+        getattr(self, "draw_"+self.id)(self.loc)
         display.update()
 
     def move(self, loc):
@@ -71,19 +77,17 @@ class BasePiece(object):
 class Piece(BasePiece):
     def draw_r(self, loc):
         B = self.board
-        r = Rect(0, 0, tilesize-40, tilesize-40)
-        loc = B.tile_locs[loc.y][loc.x]
-        print("loc", loc)
-        r.center = loc
+        r = center_square(B.resolve_loc(loc), iround(B.tilesize*0.5))
         draw.rect(B.sfc, (50,50,50), r, 1)
         draw.rect(B.sfc, gray, r.inflate(-4,-4), 0)
         B.scr.blit(B.sfc, (0,0))
 
     def draw_o(self, loc):
         B = self.board
-        loc = B.tile_locs[loc.y][loc.x]
-        gfxdraw.filled_circle(B.sfc, loc[0], loc[1], B.tilesize/2-22, (120,120,120))
-        gfxdraw.aacircle(B.sfc, loc[0], loc[1], B.tilesize/2-20, black)
+        loc = B.resolve_loc(loc)
+        rad = iround((B.tilesize/2) * 0.6)
+        gfxdraw.filled_circle(B.sfc, loc[0], loc[1], rad, (120,120,120))
+        gfxdraw.aacircle(B.sfc, loc[0], loc[1], rad + 2, black)
         B.scr.blit(B.sfc, (0,0))
 
 
@@ -92,6 +96,7 @@ class GameBoard(PygameBoard):
         p1 = self[loc1].piece
         p2 = self[loc2].piece
         if p1 == p2: return     # can't capture own piece
+
         if p2 in ai_pieces:
             ai_pieces.remove(p2)
         elif p2 in player_pieces:
@@ -112,11 +117,10 @@ class Game1(object):
         """Main loop."""
         for player in cycle(players):
             self.make_move(player)
-            print("ai_pieces", ai_pieces)
             if not ai_pieces:
-                self.game_won(p1.char)
+                self.game_won(p1.id)
             if not player_pieces:
-                self.game_won(ai.char)
+                self.game_won(ai.id)
 
     def make_move(self, player):
         if player == ai:
@@ -126,8 +130,8 @@ class Game1(object):
 
     def ai_move(self, player):
         """Capture player piece if possible, otherwise move to a blank if possible, or try another piece."""
-        shuffle(ai_pieces)
-        for p in ai_pieces:
+        shuffle(player.pieces)
+        for p in player.pieces:
             nbrs   = board.neighbour_locs(p)
             pl     = [loc for loc in nbrs if same_side(board[loc].piece, p1)]
             blanks = [loc for loc in nbrs if board[loc].blank]
@@ -170,12 +174,12 @@ if __name__ == "__main__":
     arg = sys.argv[1:]
     if arg: game_size = int(arg[0])
 
-    board = GameBoard((game_size, game_size), tilesize, circle=0, tile_cls=BaseTile)
+    board = GameBoard((game_size, game_size), tilesize, circle=1, tile_cls=BaseTile)
     imax = game_size - 1
     for loc in [(0,0), (0,imax), (imax,0), (imax,imax)]:
         board[loc].set_none()
-    p1, ai        = Piece('r'), Piece('o')
+    p1, ai        = Player('r'), Player('o')
+    ai_pieces     = [Piece(ai, 'o', board, board.random_blank()) for _ in range(2)]
+    player_pieces = [Piece(p1, 'r', board, board.random_blank()) for _ in range(2)]
     players       = p1, ai
-    ai_pieces     = [Piece(ai.char, board, board.random_blank()) for _ in range(2)]
-    player_pieces = [Piece(p1.char, board, board.random_blank()) for _ in range(2)]
     Game1().run()

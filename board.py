@@ -26,6 +26,10 @@ pink       = (255,200,200)
 def pploc(loc):
     return loc.x+1, loc.y+1
 
+def center_square(loc, size):
+    r = Rect(0, 0, size, size)
+    r.center = loc
+    return r
 
 class BaseTile(object):
     """ Base tile that sets a convenience attribute according to the name of the class, e.g. Blank
@@ -344,26 +348,27 @@ class PygameBoard(Board):
         self.tile_locs = [[ (iround(margin+x+tilesize/2) , iround(margin+y+tilesize/2))
                               for x in range(0, size[0]*n, n)]
                               for y in range(0, size[1]*n, n)]
-        for loc in [l for locs in self.tile_locs for l in locs]:
-            self.mkgui_tile(loc)
+        for tile in self:
+            self.mkgui_tile(tile.loc)
+
         self.scr.blit(self.sfc, (0,0))
         display.flip()
 
-    def mkgui_tile(self, loc, clear=False):
+    def mkgui_tile(self, loc, only_clear=False):
         """ Redraw the gui tile or just clear the tile.
 
-            clear: use to clear 'unmovable' tiles
+            only_clear: use to clear 'unmovable' tiles; if False, clear and then redraw tile
         """
+        loc = self.resolve_loc(loc)
         ts = self.tilesize
         if self.circle:
             gfxdraw.filled_circle(self.sfc, loc[0], loc[1], iround(ts/2), white)
-            if not clear:
+            if not only_clear:
                 gfxdraw.aacircle(self.sfc, loc[0], loc[1], iround(ts/2-4), gray)
         else:
-            r = Rect(0, 0, ts, ts)
-            r.center = loc
+            r = center_square(loc, ts)
             draw.rect(self.sfc, white, r, 0)
-            if not clear:
+            if not only_clear:
                 gfxdraw.rectangle(self.sfc, r, gray)
         self.scr.blit(self.sfc, (0,0))
 
@@ -382,12 +387,10 @@ class PygameBoard(Board):
             loc = Loc(loc[0], loc[1])
         super(PygameBoard, self).__setitem__(loc, piece)
         if 0:
-            # rect = self.gui_tiles[loc.y][loc.x]
-            loc = self.tile_locs[loc.y][loc.x]
             if isinstance(piece, (str, unicode)):
-                self.draw_glyph(piece, loc)
+                self.draw_glyph(piece, self.resolve_loc(loc))
             else:
-                piece.draw(loc)
+                piece.draw()
             display.update()
 
     def move(self, loc1, loc2):
@@ -402,41 +405,27 @@ class PygameBoard(Board):
     def is_highlighted(self, loc):
         return self[loc].highlight
 
+    def resolve_loc(self, loc):
+        """Return exact pixel center location from tile index `loc`."""
+        return self.tile_locs[loc.y][loc.x]
+
     def toggle_highlight(self, loc):
         if self[loc]:
-            tloc      = self.tile_locs[loc.y][loc.x]
-            ts        = self.tilesize
             color     = white if self[loc].highlight else light_blue
-            # x, y      = r.topleft
             thickness = 3
             th2       = thickness*2
 
-            r         = Rect(0, 0, ts-th2, ts-th2)
-            r.center  = tloc
+            r = center_square(self.resolve_loc(loc), self.tilesize-th2)
             draw.rect(self.scr, color, r, thickness)
             self[loc].highlight = not self[loc].highlight
             display.update()
 
     def clear(self, loc):
-        # ts        = self.tilesize
-        # r         = self.gui_tiles[y][x]
-        # self[loc] = self.make_tile(loc)
-        x, y = loc
-        tloc = self.tile_locs[y][x]
-        self.mkgui_tile(tloc, False)
-        # r         = Rect(0, 0, ts, ts)
-        # r.center  = tloc
-        # draw.rect(self.scr, white, r, 0)
-        # draw.rect(self.scr, gray, r, 1)
+        self.mkgui_tile(loc)
         display.update()
 
     def make_blank(self, loc):
-        # ts   = self.tilesize
-        # r    = self.gui_tiles[y][x]
-        x, y = loc
-        loc  = self.tile_locs[y][x]
-        self.mkgui_tile(loc, clear=True)
-        # draw.rect(self.scr, white, (r.topleft[0], r.topleft[1], ts, ts), 0)
+        self.mkgui_tile(loc, only_clear=True)
         display.update()
 
     def wait_exit(self):
@@ -461,7 +450,7 @@ class PygameBoard(Board):
                     return loc
 
     def draw_glyph(self, char, center, color=(0,0,0), bgcolor=(255,255,255)):
-        """UNUSED, Draw glyph `char` at `loc`."""
+        """Draw glyph `char` at `loc`."""
         char = self.glyph_font.render(unicode(char), 1, color, bgcolor)
         rect = char.get_rect()
         rect.center = center
